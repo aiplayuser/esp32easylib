@@ -6,8 +6,8 @@
 #include "DNSServer.h" //自动弹窗
 #include "ArduinoJson.h" //json解析
 #include "PubSubClient.h" //mqtt服务
-#include "FS.h" //闪存系统
 #include "LittleFS.h" //闪存系统
+#include "FS.h" //闪存系统
 #include "Ticker.h" //定时器
 
 #include <Update.h>
@@ -43,6 +43,8 @@ void homepage(){ String html = httphead() + "ID: " + espid + "-" + String(ESP.ge
 
     html+= "<form action=/upload name=form1 method=POST enctype=multipart/form-data><input type=file name=data onchange=document.form1.submit()></form><p>" ; //上传文件
 
+    html+="FSInfo: "+String(LittleFS.usedBytes())+"/"+String(LittleFS.totalBytes())+"-Byte<p>"; //闪存信息
+
     file = LittleFS.open("/", "r"); while(File entry = file.openNextFile()){
                                 html+="<form action=/delone method=post><a href="+String(entry.name())+">"+String(entry.name())+"</a>--"+String(entry.size());
                                 html+="<input name=mingzi style=width:0px value="+String(entry.name())+"><input type=submit value=删除Del></form><p>"; entry.close(); } file.close();
@@ -59,7 +61,7 @@ void cjson(){ doc.clear(); file.close(); } //关闭json对象
 void rjson(String jsonfile){ file = LittleFS.open(jsonfile,"r"); deserializeJson(doc,file); } //读取json对象
 void wjson(String jsonfile){ file = LittleFS.open(jsonfile,"w"); serializeJson(doc,file); cjson(); } //写入json对象
 
-void again(String info = "R S T..."){ webserver.send( 200,"text/html",httphead()+"<h2>"+ info +"<br>稍后返回home</h2></body></html>" ); delay(3333); ESP.restart(); }
+void again(String info = "R S T..."){ webserver.send( 200,"text/html",httphead()+"<h2>"+ info +"<br>稍后返回home</h2></body></html>" ); delay(6666); ESP.restart(); }
 
 String getChip() { uint8_t mac[6]; WiFi.macAddress(mac); return String(mac[0]) + String(mac[1]) + String(mac[2]) + String(mac[3]) + String(mac[4]); } //拼接mac地址作为id
 
@@ -96,7 +98,7 @@ void setup1(){ Serial.begin(9600); Serial.println("\nbegin\n"); pinMode(0,INPUT_
                                         html+="<input name=pass size=15><input type=submit value=连接wifi></form><p>"; } } }
                                         html+="</body></html>"; webserver.send(200,"text/html",html); } ); //扫描路由器
                            
-    webserver.on("/deloneok",[](){ LittleFS.remove(webserver.arg("mingzi")); homepage(); } ); //确认删除单个文件
+    webserver.on("/deloneok",[](){ LittleFS.remove("/"+webserver.arg("mingzi")); homepage(); } ); //确认删除单个文件
     webserver.on("/delone",[](){ String html=httphead()+"<form action=/deloneok method=post><input name=mingzi size=24 value="+webserver.arg("mingzi");
                                         html+="><p><input type=submit value=删除Del></form></body></html>"; webserver.send(200,"text/html",html); } ); //删除单个文件
     webserver.on("/delallok",[](){ LittleFS.format(); homepage(); } ); //确认删除所有文件
